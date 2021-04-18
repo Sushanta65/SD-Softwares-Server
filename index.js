@@ -3,19 +3,23 @@ const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config()
+const fileUpload = require('express-fileupload')
 const MongoClient = require('mongodb').MongoClient;
 const ObjectId = require("mongodb").ObjectId;
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.in3ti.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 //Port
 const port = process.env.PORT || 8080;
-app.use(cors())
 app.use(bodyParser.json())
+app.use(cors())
+app.use(express.static('admins'))
+app.use(fileUpload())
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
   const servicesCollection = client.db("SDSoftwares").collection("services");
   const reviewCollection = client.db("SDSoftwares").collection("review");
   const ordersCollection = client.db("SDSoftwares").collection("orders");
+  const adminsCollection = client.db("SDSoftwares").collection("admins");
 
     app.get('/services', (req, res) => {
         servicesCollection.find()
@@ -88,6 +92,39 @@ client.connect(err => {
         res.send(result.insertedCount > 0)
       })
     })
+
+   app.get('/admins', (req, res) => {
+     adminsCollection.find({})
+     .toArray((err, documents) => {
+       res.send(documents)
+     })
+   })
+
+    app.post('/addAdmin', (req, res) => {
+      const file = req.files.file;
+      const name = req.body.name;
+      const email = req.body.email;
+      file.mv(`${__dirname}/admins/${file.name}`, error => {
+        if(error){
+          console.log(error)
+          return res.status(500).send({msg: 'image upload faild'})
+        }
+
+      })
+      adminsCollection.insertOne({fileName: file.name, name, email})
+      .then(result => {
+        res.send(result.insertedCount > 0)
+      })
+    })
+
+    app.post('/isAdmin', (req, res) => {
+      const email = req.body.email;
+      adminsCollection.find({email: email})
+      .toArray((err, admins) => {
+        res.send(admins.length > 0)
+      })
+    })
+    
 });
 
  
