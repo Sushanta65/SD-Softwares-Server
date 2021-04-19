@@ -124,6 +124,13 @@ client.connect(err => {
         res.send(admins.length > 0)
       })
     })
+
+    app.delete('/services/:id', (req, res) => {
+      servicesCollection.deleteOne({_id: ObjectId(req.params.id)})
+      .then(result => {
+        console.log(result)
+      })
+    })
     
 });
 
